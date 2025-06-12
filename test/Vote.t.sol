@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import "../src/Vote.sol";
 
 contract VoteTest is Test {
@@ -14,26 +14,44 @@ contract VoteTest is Test {
     uint256 endTime;
 
     function setUp() public {
-        owner = address(this);
+        owner = address(0x234); 
         voter1 = address(0x1);
         voter2 = address(0x2);
         startTime = block.timestamp + 1 hours;
         endTime = block.timestamp + 2 hours;
+        vm.prank(owner); // deploy contract as owner
         voteContract = new Vote(startTime, endTime);
     }
 
     function testRegisterVoter() public {
+        vm.prank(owner); // register as owner 
         voteContract.registerVoter(voter1, 25);
         (bool isRegistered,,,) = voteContract.voters(voter1);
         assertTrue(isRegistered);
     }
 
+    function testRegisterVoterasNonOwner() public {
+    vm.prank(voter1); // register as nonowner
+    vm.expectRevert("ONLY OWNER CAN CALL THIS FUNCTION");
+    voteContract.registerVoter(voter1, 25);
+}
+
     function testRegisterUnderageVoter() public {
+        vm.prank(owner);
         vm.expectRevert("VOTER MUST BE AT LEAST 18 YEARS OLD");
         voteContract.registerVoter(voter1, 17);
     }
 
+    function testDoubleRegistration() public {
+        vm.prank(owner);
+        voteContract.registerVoter(voter1, 25);
+        vm.prank(owner);
+        vm.expectRevert("VOTER ALREADY REGISTERED");
+        voteContract.registerVoter(voter1, 30);
+    }
+
     function testVoteBeforeStartTime() public {
+        vm.prank(owner);
         voteContract.registerVoter(voter1, 25);
         vm.prank(voter1);
         vm.expectRevert("VOTING IS NOT ALLOWED AT THIS TIME");
@@ -41,6 +59,7 @@ contract VoteTest is Test {
     }
 
     function testVoteAfterEndTime() public {
+        vm.prank(owner);
         voteContract.registerVoter(voter1, 25);
         vm.warp(endTime + 1);
         vm.prank(voter1);
@@ -49,6 +68,7 @@ contract VoteTest is Test {
     }
 
     function testSuccessfulVote() public {
+        vm.prank(owner);
         voteContract.registerVoter(voter1, 25);
         vm.warp(startTime + 1);
         vm.prank(voter1);
@@ -59,6 +79,7 @@ contract VoteTest is Test {
     }
 
     function testDoubleVoting() public {
+        vm.prank(owner);
         voteContract.registerVoter(voter1, 25);
         vm.warp(startTime + 1);
         vm.prank(voter1);
@@ -68,7 +89,15 @@ contract VoteTest is Test {
         voteContract.vote(2);
     }
 
+    function testUnregisteredCannotVote() public {
+        vm.warp(startTime + 1);
+        vm.prank(voter2);
+        vm.expectRevert("YOU ARE NOT REGISTERED TO VOTE");
+        voteContract.vote(1);
+    }
+
     function testGetVote() public {
+        vm.prank(owner);
         voteContract.registerVoter(voter1, 25);
         vm.warp(startTime + 1);
         vm.prank(voter1);
@@ -78,7 +107,22 @@ contract VoteTest is Test {
         assertEq(retrievedVote, 1);
     }
 
+    function testGetVoteNotVoted() public {
+        vm.prank(owner);
+        voteContract.registerVoter(voter1, 25);
+        vm.prank(voter1);
+        vm.expectRevert("YOU HAVE NOT VOTED YET");
+        voteContract.getVote();
+    }
+
+    function testGetVoteNotRegistered() public {
+        vm.prank(voter2);
+        vm.expectRevert("YOU ARE NOT REGISTERED TO VOTE");
+        voteContract.getVote();
+    }
+
     function testHasVoted() public {
+        vm.prank(owner);
         voteContract.registerVoter(voter1, 25);
         vm.warp(startTime + 1);
         vm.prank(voter1);
