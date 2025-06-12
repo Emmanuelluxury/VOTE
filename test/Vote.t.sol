@@ -14,7 +14,7 @@ contract VoteTest is Test {
     uint256 endTime;
 
     function setUp() public {
-        owner = address(0x234); 
+        owner = address(0x234);
         voter1 = address(0x1);
         voter2 = address(0x2);
         startTime = block.timestamp + 1 hours;
@@ -24,17 +24,17 @@ contract VoteTest is Test {
     }
 
     function testRegisterVoter() public {
-        vm.prank(owner); // register as owner 
+        vm.prank(owner); // register as owner
         voteContract.registerVoter(voter1, 25);
         (bool isRegistered,,,) = voteContract.voters(voter1);
         assertTrue(isRegistered);
     }
 
     function testRegisterVoterasNonOwner() public {
-    vm.prank(voter1); // register as nonowner
-    vm.expectRevert("ONLY OWNER CAN CALL THIS FUNCTION");
-    voteContract.registerVoter(voter1, 25);
-}
+        vm.prank(voter1); // register as nonowner
+        vm.expectRevert("ONLY OWNER CAN CALL THIS FUNCTION");
+        voteContract.registerVoter(voter1, 25);
+    }
 
     function testRegisterUnderageVoter() public {
         vm.prank(owner);

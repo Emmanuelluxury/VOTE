@@ -20,7 +20,9 @@ contract Vote {
     }
 
     modifier onlyDuringVoting() {
-        require(block.timestamp >= votingStartTime && block.timestamp <= votingEndTime, "VOTING IS NOT ALLOWED AT THIS TIME");
+        require(
+            block.timestamp >= votingStartTime && block.timestamp <= votingEndTime, "VOTING IS NOT ALLOWED AT THIS TIME"
+        );
         _;
     }
 
